@@ -133,33 +133,40 @@ async def test_enrich_does_not_fail_whole_when_one_provider_errors():
 # ---------- parallelism (not sequential) ----------
 @pytest.mark.asyncio
 async def test_enrich_runs_providers_concurrently():
+    """Prove concurrency without wall-clock timing.
+
+    Both providers must be *inside* their query() simultaneously.
+    We use an asyncio.Barrier that requires both to arrive before either
+    can proceed. If the orchestrator ran them sequentially, the first
+    would block forever and the test would time out.
+    """
     import asyncio
 
-    async def slow_ok(self, indicator, ioc_type):
-        await asyncio.sleep(0.05)
+    barrier = asyncio.Barrier(2)
+
+    async def wait_at_barrier(self, indicator, ioc_type):
+        await asyncio.wait_for(barrier.wait(), timeout=1.0)
         return _ok(self.name, indicator, ioc_type)
 
     class A(BaseProviderAdapter):
         name = "a"
         supported_types = frozenset({"ipv4"})
-        query = slow_ok
+        query = wait_at_barrier
 
     class B(BaseProviderAdapter):
         name = "b"
         supported_types = frozenset({"ipv4"})
-        query = slow_ok
+        query = wait_at_barrier
 
-    import time
-    start = time.perf_counter()
-    results = await enrich(
-        indicator="203.0.113.10",
-        ioc_type="ipv4",
-        adapters=[A(), B()],
+    results = await asyncio.wait_for(
+        enrich(
+            indicator="203.0.113.10",
+            ioc_type="ipv4",
+            adapters=[A(), B()],
+        ),
+        timeout=2.0,
     )
-    elapsed = time.perf_counter() - start
     assert len(results) == 2
-    # Sequential would be ~0.10s; concurrent should be ~0.05s.
-    assert elapsed < 0.09, f"expected concurrency, got {elapsed:.3f}s"
 
 
 # ---------- results are per-provider, not merged ----------
