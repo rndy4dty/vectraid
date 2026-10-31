@@ -24,11 +24,25 @@ Thumbs.db
 *.pem
 *.key
 
-# Malware samples — never commit real malware
-backend/tests/fixtures/malware/*
-!backend/tests/fixtures/malware/.gitkeep
+# Real malware samples — never commit
 datasets/malware/*
 !datasets/malware/.gitkeep
+
+# MalTrace test fixtures are synthetic and safe — explicitly allow BEFORE the ignore-all
+!backend/tests/fixtures/malware/sample.zip
+!backend/tests/fixtures/malware/sample.pdf
+!backend/tests/fixtures/malware/sample.png
+!backend/tests/fixtures/malware/sample.exe
+!backend/tests/fixtures/malware/text.txt
+# Ignore everything else in the malware fixture dir (defensive)
+backend/tests/fixtures/malware/*
+!backend/tests/fixtures/malware/.gitkeep
+# Re-allow after the ignore-all (belt and suspenders)
+!backend/tests/fixtures/malware/sample.zip
+!backend/tests/fixtures/malware/sample.pdf
+!backend/tests/fixtures/malware/sample.png
+!backend/tests/fixtures/malware/sample.exe
+!backend/tests/fixtures/malware/text.txt
 
 # Real phishing .eml — but allow test fixtures
 *.eml
