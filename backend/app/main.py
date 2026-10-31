@@ -1,36 +1,39 @@
 """VECTRAID FastAPI application entrypoint.
 
 Exposes a create_app() factory so tests can build isolated instances.
-The default module-level `app` is preserved for uvicorn.
-
-Design rules:
-  - create_app() builds a fresh app with fresh dependency instances.
-  - /health is unauthenticated and always available.
-  - All business endpoints live under API_V1_PREFIX (/api/v1).
+Each app gets its own CaseStore / EvidenceStore / CaseIDGenerator.
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from fastapi import FastAPI
 
+from app.api.v1.router import router as v1_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.modules.investigation.case_store import CaseIDGenerator, CaseStore
+from app.modules.investigation.evidence import EvidenceStore
 
 configure_logging()
 settings = get_settings()
 
 
 def create_app() -> FastAPI:
-    """Build a fresh FastAPI application.
-
-    Each call returns a new app instance with independent routers and
-    dependency state. This keeps tests isolated.
-    """
+    """Build a fresh FastAPI application with isolated state."""
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
         description=(
             "VECTRAID - Unified Threat Intelligence & Investigation Platform"
         ),
+    )
+
+    # Per-app state
+    app.state.case_store = CaseStore()
+    app.state.evidence_store = EvidenceStore()
+    app.state.case_id_generator = CaseIDGenerator(
+        year=datetime.now(UTC).year
     )
 
     @app.get("/health")
@@ -41,8 +44,9 @@ def create_app() -> FastAPI:
             "version": settings.app_version,
         }
 
+    app.include_router(v1_router, prefix=settings.api_v1_prefix)
+
     return app
 
 
-# Module-level app for uvicorn / production
 app = create_app()

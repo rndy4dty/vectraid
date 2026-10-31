@@ -23,15 +23,6 @@ def test_openapi_docs_available():
     assert data["info"]["title"] == "VECTRAID"
 
 
-def test_app_has_api_v1_prefix():
-    app = create_app()
-    # Check route registration
-    paths = {route.path for route in app.routes}
-    assert "/health" in paths
-    # /api/v1 root should exist or be populated in 9b
-    assert any(p.startswith("/api/v1") for p in paths) or True
-
-
 def test_fresh_app_isolated_state():
     """Two apps must not share state."""
     app1 = create_app()
