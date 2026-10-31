@@ -9,8 +9,12 @@ import {
   formatRelativeTime,
 } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
+import { CaseActions } from "@/features/cases/case-actions";
+import { ReportViewer } from "@/features/cases/report-viewer";
 
 export const dynamic = "force-dynamic";
+
+const DEFAULT_ANALYST = "analyst@example.com";
 
 export default async function CaseDetailPage({
   params,
@@ -59,59 +63,99 @@ export default async function CaseDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Evidence</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {c.evidence_ids.length === 0
-              ? "No evidence linked yet."
-              : `${c.evidence_ids.length} evidence linked.`}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-4">
+          <ReportViewer caseId={c.case_id} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Decisions</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {c.decisions.length === 0
-              ? "No decisions recorded."
-              : `${c.decisions.length} decision(s) recorded.`}
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Evidence ({c.evidence_ids.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {c.evidence_ids.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No evidence linked yet.
+                </p>
+              ) : (
+                <ul className="text-sm space-y-1 font-mono">
+                  {c.evidence_ids.map((id) => (
+                    <li key={id}>{id}</li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            {c.notes.length === 0
-              ? "No notes yet."
-              : `${c.notes.length} note(s).`}
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Decisions ({c.decisions.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {c.decisions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No decisions recorded.
+                </p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {c.decisions.map((d, i) => (
+                    <li key={i}>
+                      <div className="font-medium">
+                        <Badge variant="info">{d.outcome}</Badge> by {d.analyst}
+                      </div>
+                      <div className="text-muted-foreground">{d.rationale}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes ({c.notes.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {c.notes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No notes yet.</p>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {c.notes.map((n, i) => (
+                    <li key={i}>
+                      <div className="text-xs text-muted-foreground">
+                        {n.author} · {formatRelativeTime(n.timestamp)}
+                      </div>
+                      <div>{n.text}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Audit trail</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                {c.history.map((e, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="font-mono text-xs text-muted-foreground shrink-0 w-20">
+                      {formatRelativeTime(e.timestamp)}
+                    </span>
+                    <span className="font-medium">{e.action}</span>
+                    <span className="text-muted-foreground">by {e.actor}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <aside className="space-y-4">
+          <CaseActions case_={c} by={DEFAULT_ANALYST} />
+        </aside>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit trail</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm">
-            {c.history.map((e, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="font-mono text-xs text-muted-foreground shrink-0 w-20">
-                  {formatRelativeTime(e.timestamp)}
-                </span>
-                <span className="font-medium">{e.action}</span>
-                <span className="text-muted-foreground">by {e.actor}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   );
 }
