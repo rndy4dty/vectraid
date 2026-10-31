@@ -1,0 +1,38 @@
+[
+  {
+    "EventID": 1,
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "UtcTime": "2026-11-01T09:00:00.000Z",
+    "Computer": "WORKSTATION-01",
+    "User": "CORP\\alice",
+    "Image": "C:\\Windows\\System32\\notepad.exe",
+    "CommandLine": "notepad.exe C:\\Users\\alice\\notes.txt",
+    "ParentImage": "C:\\Windows\\explorer.exe",
+    "ProcessId": 4120,
+    "ParentProcessId": 3800
+  },
+  {
+    "EventID": 1,
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "UtcTime": "2026-11-01T09:02:15.000Z",
+    "Computer": "WORKSTATION-01",
+    "User": "CORP\\alice",
+    "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "CommandLine": "powershell.exe -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA",
+    "ParentImage": "C:\\Windows\\System32\\cmd.exe",
+    "ProcessId": 5100,
+    "ParentProcessId": 4900
+  },
+  {
+    "EventID": 1,
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "UtcTime": "2026-11-01T09:03:45.000Z",
+    "Computer": "SERVER-DC-01",
+    "User": "NT AUTHORITY\\SYSTEM",
+    "Image": "C:\\Windows\\System32\\rundll32.exe",
+    "CommandLine": "rundll32.exe C:\\Users\\Public\\update.dll,EntryPoint",
+    "ParentImage": "C:\\Windows\\System32\\svchost.exe",
+    "ProcessId": 6200,
+    "ParentProcessId": 800
+  }
+]

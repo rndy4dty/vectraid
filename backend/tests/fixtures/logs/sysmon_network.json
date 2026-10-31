@@ -1,0 +1,26 @@
+[
+  {
+    "EventID": 3,
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "UtcTime": "2026-11-01T09:05:00.000Z",
+    "Computer": "WORKSTATION-01",
+    "User": "CORP\\alice",
+    "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "SourceIp": "10.0.0.42",
+    "DestinationIp": "203.0.113.10",
+    "DestinationPort": 443,
+    "Protocol": "tcp"
+  },
+  {
+    "EventID": 3,
+    "Channel": "Microsoft-Windows-Sysmon/Operational",
+    "UtcTime": "2026-11-01T09:06:00.000Z",
+    "Computer": "WORKSTATION-01",
+    "User": "CORP\\alice",
+    "Image": "C:\\Windows\\System32\\notepad.exe",
+    "SourceIp": "10.0.0.42",
+    "DestinationIp": "8.8.8.8",
+    "DestinationPort": 53,
+    "Protocol": "udp"
+  }
+]

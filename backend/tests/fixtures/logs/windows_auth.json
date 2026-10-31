@@ -1,0 +1,38 @@
+[
+  {
+    "EventID": 4624,
+    "Channel": "Security",
+    "TimeCreated": "2026-11-01T08:00:00Z",
+    "Computer": "WORKSTATION-01",
+    "TargetUserName": "alice",
+    "IpAddress": "10.0.0.42",
+    "LogonType": 2
+  },
+  {
+    "EventID": 4625,
+    "Channel": "Security",
+    "TimeCreated": "2026-11-01T09:10:00Z",
+    "Computer": "WORKSTATION-01",
+    "TargetUserName": "admin",
+    "IpAddress": "203.0.113.5",
+    "LogonType": 3
+  },
+  {
+    "EventID": 4625,
+    "Channel": "Security",
+    "TimeCreated": "2026-11-01T09:10:15Z",
+    "Computer": "WORKSTATION-01",
+    "TargetUserName": "admin",
+    "IpAddress": "203.0.113.5",
+    "LogonType": 3
+  },
+  {
+    "EventID": 4625,
+    "Channel": "Security",
+    "TimeCreated": "2026-11-01T09:10:30Z",
+    "Computer": "WORKSTATION-01",
+    "TargetUserName": "admin",
+    "IpAddress": "203.0.113.5",
+    "LogonType": 3
+  }
+]
