@@ -91,6 +91,18 @@ async def analyze_ioc(payload: AnalyzeIOCRequest) -> AnalyzeIOCResponse:
 # ---------- analyze email ----------
 @router.post("/email", response_model=AnalyzeEmailResponse)
 def analyze_email(payload: AnalyzeEmailRequest) -> AnalyzeEmailResponse:
+    # Sanity: must look like an email (has at least one header line)
+    import re as _re
+
+    _header_re = _re.compile(
+        r"^(From|Subject|Received|Date|To|Return-Path):",
+        _re.MULTILINE,
+    )
+    if not _header_re.search(payload.email_text):
+        raise HTTPException(
+            status_code=400,
+            detail="input does not look like an email (no recognized headers)",
+        )
     try:
         parsed = parse_eml(payload.email_text)
     except ValueError as exc:

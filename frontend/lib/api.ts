@@ -97,6 +97,86 @@ export interface GraphEdge {
   timestamp: string;
 }
 
+export interface EmailIOC {
+  value: string;
+  ioc_type: string;
+  source: string;
+}
+
+export interface EmailFinding {
+  code: string;
+  severity: string;
+  detail: string;
+}
+
+export interface EmailAuthResult {
+  spf: string;
+  spf_domain: string | null;
+  dkim: string;
+  dkim_domain: string | null;
+  dmarc: string;
+  dmarc_domain: string | null;
+}
+
+export interface EmailAnalysisResult {
+  parsed: {
+    from_domain: string | null;
+    reply_to_domain: string | null;
+    return_path_domain: string | null;
+    subject: string | null;
+  };
+  iocs: EmailIOC[];
+  auth: EmailAuthResult;
+  findings: EmailFinding[];
+}
+
+export interface FileAnalysisResult {
+  identification: {
+    magic: string;
+    mime: string;
+    extension: string;
+    extension_mismatch: boolean;
+    size: number;
+  };
+  metadata: {
+    md5: string;
+    sha1: string;
+    sha256: string;
+    pe_info: Record<string, unknown> | null;
+    strings_truncated: boolean;
+  };
+  yara: {
+    matches: Array<{
+      rule_name: string;
+      tags: string[];
+      meta: Record<string, unknown>;
+    }>;
+    error: string | null;
+    timed_out: boolean;
+  };
+  classification: {
+    classification: string;
+    confidence: number;
+    reasons: string[];
+  };
+}
+
+export interface HuntLogsResult {
+  report: {
+    summary: {
+      event_count: number;
+      rule_finding_count: number;
+      ioc_match_count: number;
+      unique_hosts: number;
+      unique_users: number;
+      severity_breakdown: Record<string, number>;
+      time_range: [string | null, string | null];
+    };
+    skipped: number;
+    errors: string[];
+  };
+}
+
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -222,6 +302,24 @@ export const api = {
 
   getReport: (case_id: string) =>
     request<unknown>(`/api/v1/cases/${case_id}/report`),
+
+  analyzeEmail: (email_text: string) =>
+    request<EmailAnalysisResult>("/api/v1/analyze/email", {
+      method: "POST",
+      body: JSON.stringify({ email_text }),
+    }),
+
+  analyzeFile: (content_b64: string, filename: string) =>
+    request<FileAnalysisResult>("/api/v1/analyze/file", {
+      method: "POST",
+      body: JSON.stringify({ content_b64, filename }),
+    }),
+
+  huntLogs: (logs_text: string, iocs: string[] = []) =>
+    request<HuntLogsResult>("/api/v1/hunt/logs", {
+      method: "POST",
+      body: JSON.stringify({ logs_text, iocs }),
+    }),
 
   graphOverview: () =>
     request<GraphOverview>("/api/v1/graph/overview"),
