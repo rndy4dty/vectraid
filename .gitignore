@@ -48,3 +48,9 @@ backend/tests/fixtures/malware/*
 # Real phishing .eml — but allow test fixtures
 *.eml
 !backend/tests/fixtures/emails/*.eml
+
+# Frontend build artifacts
+frontend/.next/
+frontend/node_modules/
+frontend/*.backup
+frontend/npm-audit.json

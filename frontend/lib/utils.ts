@@ -35,3 +35,37 @@ export function riskColor(classification: string): string {
       return "text-foreground";
   }
 }
+
+export function statusVariant(
+  status: string,
+): "default" | "critical" | "high" | "medium" | "low" | "info" | "muted" {
+  switch (status) {
+    case "new":
+      return "info";
+    case "investigating":
+      return "medium";
+    case "resolved":
+      return "low";
+    case "closed":
+      return "muted";
+    default:
+      return "default";
+  }
+}
+
+export function priorityVariant(
+  priority: string,
+): "default" | "critical" | "high" | "medium" | "low" | "info" | "muted" {
+  switch (priority) {
+    case "critical":
+      return "critical";
+    case "high":
+      return "high";
+    case "medium":
+      return "medium";
+    case "low":
+      return "low";
+    default:
+      return "default";
+  }
+}
