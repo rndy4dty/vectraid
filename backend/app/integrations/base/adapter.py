@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
 
+from app.integrations.base.errors import classify_error, retry_async
+
 Classification = Literal["malicious", "suspicious", "clean", "unknown"]
 _ALLOWED: frozenset[str] = frozenset(
     {"malicious", "suspicious", "clean", "unknown"}
@@ -74,3 +76,37 @@ class BaseProviderAdapter(ABC):
         return ProviderResponse with error field populated instead.
         """
         ...
+
+    async def safe_query(self, indicator: str, ioc_type: str) -> ProviderResponse:
+        """Fail-soft wrapper around query(): timeout + retry + error mapping.
+
+        Never raises. Returns ProviderResponse with classification='unknown'
+        and error populated on any failure. Checks supports() first.
+        """
+        if not self.supports(ioc_type):
+            return ProviderResponse(
+                provider=self.name,
+                indicator=indicator,
+                ioc_type=ioc_type,
+                classification="unknown",
+                confidence=0,
+                raw=None,
+                error="unsupported_type",
+            )
+
+        try:
+            return await retry_async(
+                lambda: self.query(indicator, ioc_type),
+                max_attempts=3,
+                base_delay=0.0,
+            )
+        except BaseException as exc:  # noqa: BLE001 - fail-soft boundary
+            return ProviderResponse(
+                provider=self.name,
+                indicator=indicator,
+                ioc_type=ioc_type,
+                classification="unknown",
+                confidence=0,
+                raw=None,
+                error=classify_error(exc),
+            )
