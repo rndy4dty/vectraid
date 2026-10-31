@@ -64,6 +64,7 @@ class Case:
     priority: CasePriority
     created_by: str
     assignee: str | None = None
+    evidence_ids: list[str] = field(default_factory=list)
     notes: list[CaseNote] = field(default_factory=list)
     history: list[CaseEvent] = field(default_factory=list)
 
