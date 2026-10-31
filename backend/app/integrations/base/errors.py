@@ -20,6 +20,19 @@ import httpx
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 
 
+class ProviderError(Exception):
+    """Raised by adapters to signal a stable error tag.
+
+    classify_error() will return ``code`` verbatim, so dashboards and
+    orchestrators can aggregate on stable strings.
+    """
+
+    def __init__(self, code: str, message: str = "") -> None:
+        super().__init__(message or code)
+        self.code = code
+
+
+
 def classify_error(exc: BaseException) -> str:
     """Return a stable string tag for a provider-side exception.
 
@@ -31,6 +44,8 @@ def classify_error(exc: BaseException) -> str:
       - 'client_error: <code>'  : HTTP 4xx (non-429) from client side
       - 'unknown: <repr>'       : anything else
     """
+    if isinstance(exc, ProviderError):
+        return exc.code
     if isinstance(exc, httpx.TimeoutException):
         return "timeout"
     if isinstance(exc, httpx.ConnectError):
