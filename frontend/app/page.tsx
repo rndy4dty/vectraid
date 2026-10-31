@@ -1,32 +1,49 @@
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
-import { Activity, FolderSearch, Radar, ShieldAlert } from "lucide-react";
+import { api, type CaseResponse, type EvidenceResponse } from "@/lib/api";
+import {
+  statusVariant,
+  priorityVariant,
+  formatRelativeTime,
+} from "@/lib/utils";
+import {
+  Activity,
+  FolderSearch,
+  Radar,
+  ShieldAlert,
+  ArrowRight,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-async function safeHealth(): Promise<
-  { ok: true; version: string } | { ok: false; error: string }
-> {
+async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {
-    const h = await api.health();
-    return { ok: true, version: h.version };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "unknown" };
+    return await fn();
+  } catch {
+    return fallback;
   }
 }
 
 export default async function OverviewPage() {
-  const health = await safeHealth();
+  const health = await safe(() => api.health(), null);
+  const cases = await safe(() => api.listCases(), [] as CaseResponse[]);
+  const evidence = await safe(
+    () => api.listEvidence(),
+    [] as EvidenceResponse[],
+  );
 
-  let caseCount = 0;
-  let caseError: string | null = null;
-  try {
-    const cases = await api.listCases();
-    caseCount = cases.length;
-  } catch (e) {
-    caseError = e instanceof Error ? e.message : "unknown";
-  }
+  const openCases = cases.filter(
+    (c) => c.status === "new" || c.status === "investigating",
+  );
+  const criticalCases = cases.filter((c) => c.priority === "critical");
+  const recentCases = [...cases]
+    .sort((a, b) => {
+      const ta = a.history[a.history.length - 1]?.timestamp ?? "";
+      const tb = b.history[b.history.length - 1]?.timestamp ?? "";
+      return tb.localeCompare(ta);
+    })
+    .slice(0, 5);
 
   return (
     <div className="p-6 space-y-6">
@@ -37,49 +54,108 @@ export default async function OverviewPage() {
             Unified Threat Intelligence &amp; Investigation Platform
           </p>
         </div>
-        <Badge variant={health.ok ? "low" : "critical"}>
-          API {health.ok ? "online" : "offline"}
+        <Badge variant={health ? "low" : "critical"}>
+          API {health ? "online" : "offline"}
         </Badge>
       </div>
 
-      {health.ok ? (
+      {health ? (
         <div className="text-xs text-muted-foreground">
           Backend version: <span className="font-mono">{health.version}</span>
         </div>
-      ) : (
-        <div className="text-xs text-critical">
-          Backend unreachable: {health.error}
-        </div>
-      )}
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Cases"
-          value={caseCount}
+          value={cases.length}
           icon={FolderSearch}
-          hint={caseError ? `error: ${caseError}` : "all cases"}
+          hint={`${openCases.length} open`}
         />
-        <StatCard title="Evidence" value="—" icon={ShieldAlert} hint="coming soon" />
-        <StatCard title="IOCs" value="—" icon={Radar} hint="coming soon" />
-        <StatCard title="Activity" value="—" icon={Activity} hint="coming soon" />
+        <StatCard
+          title="Evidence"
+          value={evidence.length}
+          icon={ShieldAlert}
+          hint="all sources"
+        />
+        <StatCard
+          title="Critical"
+          value={criticalCases.length}
+          icon={Activity}
+          hint="priority critical"
+        />
+        <StatCard
+          title="IOC Explorer"
+          value="→"
+          icon={Radar}
+          hint="query indicators"
+          href="/iocs"
+        />
       </div>
 
       <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-sm">Recent cases</CardTitle>
+          <Link
+            href="/cases"
+            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {recentCases.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No cases yet.{" "}
+              <Link href="/cases" className="text-primary hover:underline">
+                Create one
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {recentCases.map((c) => (
+                <li key={c.case_id} className="py-2 flex items-center gap-3">
+                  <Link
+                    href={`/cases/${c.case_id}`}
+                    className="font-mono text-xs text-primary hover:underline"
+                  >
+                    {c.case_id}
+                  </Link>
+                  <span className="text-sm truncate flex-1">{c.title}</span>
+                  <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
+                  <Badge variant={priorityVariant(c.priority)}>
+                    {c.priority}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground w-16 text-right">
+                    {c.history.length > 0
+                      ? formatRelativeTime(
+                          c.history[c.history.length - 1].timestamp,
+                        )
+                      : "—"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader>
-          <CardTitle>Getting started</CardTitle>
+          <CardTitle className="text-sm">Getting started</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-1">
-          <p>VECTRAID is running. Use the sidebar to navigate.</p>
           <p>
-            Create your first case in{" "}
-            <a href="/cases" className="text-primary underline">
-              Cases
-            </a>{" "}
-            or analyze an indicator in{" "}
-            <a href="/iocs" className="text-primary underline">
+            New to VECTRAID? Start with{" "}
+            <Link href="/iocs" className="text-primary hover:underline">
               IOC Explorer
-            </a>
-            .
+            </Link>{" "}
+            to query an indicator, or{" "}
+            <Link href="/cases" className="text-primary hover:underline">
+              create a case
+            </Link>{" "}
+            to track an investigation.
           </p>
         </CardContent>
       </Card>
@@ -92,14 +168,16 @@ function StatCard({
   value,
   icon: Icon,
   hint,
+  href,
 }: {
   title: string;
   value: string | number;
   icon: React.ComponentType<{ className?: string }>;
   hint?: string;
+  href?: string;
 }) {
-  return (
-    <Card>
+  const inner = (
+    <Card className={href ? "hover:bg-secondary/50 transition-colors" : ""}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -114,4 +192,5 @@ function StatCard({
       </CardContent>
     </Card>
   );
+  return href ? <Link href={href}>{inner}</Link> : inner;
 }
