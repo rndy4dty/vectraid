@@ -1,0 +1,9 @@
+Return-Path: <sender@example.test>
+From: "Someone" <sender@example.test>
+To: victim@example.com
+Subject: Hello
+Date: Sat, 1 Nov 2026 10:30:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Nothing unusual here.

@@ -63,6 +63,7 @@ class EmailParseResult:
     body_html: str | None
     attachments: list[EmailAttachment] = field(default_factory=list)
     mismatch_flags: EmailMismatchFlags | None = None
+    raw_auth_header: str | None = None
 
 
 def parse_eml(raw: str) -> EmailParseResult:
@@ -77,12 +78,14 @@ def parse_eml(raw: str) -> EmailParseResult:
     body_plain, body_html, attachments = _walk_parts(msg)
     flags = _compute_flags(headers)
 
+    raw_auth = msg.get("Authentication-Results")
     return EmailParseResult(
         headers=headers,
         body_plain=body_plain,
         body_html=body_html,
         attachments=attachments,
         mismatch_flags=flags,
+        raw_auth_header=str(raw_auth) if raw_auth else None,
     )
 
 

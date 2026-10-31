@@ -1,0 +1,13 @@
+Return-Path: <bounce@bank-real.test>
+Authentication-Results: mx.victim.test;
+        spf=pass smtp.mailfrom=bank-real.test;
+        dkim=fail header.d=compromised-relay.test;
+        dmarc=fail header.from=bank-real.test
+From: "Bank Support" <support@bank-real.test>
+To: victim@example.com
+Subject: Verify account
+Date: Sat, 1 Nov 2026 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Please verify.
