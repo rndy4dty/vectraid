@@ -29,6 +29,9 @@ from app.modules.investigation.case_evidence import (
     link_evidence,
     unlink_evidence,
 )
+from app.modules.investigation.case_investigation import (
+    open_case_investigation,
+)
 from app.modules.investigation.case_store import CaseIDGenerator, CaseStore
 from app.modules.investigation.evidence import EvidenceStore
 from app.schemas.case import (
@@ -40,6 +43,7 @@ from app.schemas.case import (
     CaseTransitionRequest,
 )
 from app.schemas.evidence import LinkEvidenceRequest
+from app.schemas.report import CaseReportResponse
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -205,3 +209,17 @@ def unlink_evidence_endpoint(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     store.update(updated)
     return updated
+
+# ---------- full report ----------
+@router.get("/{case_id}/report", response_model=CaseReportResponse)
+def case_report(
+    case_id: str,
+    store: CaseStore = Depends(get_case_store),
+    evidence_store: EvidenceStore = Depends(get_evidence_store),
+) -> object:
+    case = _require_case(store, case_id)
+    report = open_case_investigation(case, evidence_store, by="api")
+    # Persist any case changes (linking, transition)
+    if store.get(report.case.case_id) is not None:
+        store.update(report.case)
+    return report
