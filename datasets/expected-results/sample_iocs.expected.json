@@ -1,0 +1,9 @@
+{
+  "input": "backend/tests/fixtures/iocs/sample_iocs.txt",
+  "expected_iocs": [
+    {"value": "203.0.113.10", "type": "ipv4"},
+    {"value": "example.test", "type": "domain"},
+    {"value": "https://account-update.example.test/login", "type": "url"},
+    {"value": "44d88612fea8a8f36de82e1278abb02f", "type": "md5"}
+  ]
+}

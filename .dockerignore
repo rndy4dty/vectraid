@@ -1,0 +1,11 @@
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+node_modules
+.next
+datasets/malware
+backend/tests/fixtures/malware
+.env

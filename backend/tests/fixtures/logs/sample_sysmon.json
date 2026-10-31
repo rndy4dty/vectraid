@@ -1,0 +1,4 @@
+[
+  {"EventID": 1, "Image": "C:\\Windows\\System32\\powershell.exe", "CommandLine": "powershell -enc ...", "UtcTime": "2026-11-01T09:00:00Z"},
+  {"EventID": 3, "DestinationIp": "203.0.113.10", "DestinationPort": 443, "UtcTime": "2026-11-01T09:05:00Z"}
+]
