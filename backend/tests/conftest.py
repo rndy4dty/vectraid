@@ -1,24 +1,23 @@
-"""Pytest fixtures for Phase 11a repository tests.
+"""Pytest fixtures - Phase 11a.
 
-Uses a real PostgreSQL database (TEST_DATABASE_URL) for integration
-tests. In CI, GitHub Actions provides the postgres service.
-
-Local developers must run:
-    docker compose up -d postgres
-and set TEST_DATABASE_URL (defaults below).
+Uses NullPool to avoid asyncpg connection pool being bound to a stale
+event loop (classic "attached to a different loop" error).
 """
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 import pytest_asyncio
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.models import Base
 
@@ -35,13 +34,12 @@ def test_database_url() -> str:
 
 @pytest_asyncio.fixture
 async def engine(test_database_url: str) -> AsyncEngine:
-    """Function-scoped async engine. Creates + drops all tables per test.
-
-    Function scope avoids ScopeMismatch with function-scoped db_session
-    under pytest-asyncio 0.24+ (session-scoped async fixtures cannot be
-    accessed from function-scoped tests).
-    """
-    eng = create_async_engine(test_database_url, echo=False)
+    """Function-scoped async engine with NullPool (no connection reuse)."""
+    eng = create_async_engine(
+        test_database_url,
+        echo=False,
+        poolclass=NullPool,
+    )
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -58,3 +56,31 @@ async def db_session(engine: AsyncEngine) -> AsyncSession:
     async with session_maker() as session:
         yield session
         await session.rollback()
+
+
+@pytest.fixture
+def api_client(engine: AsyncEngine) -> Generator[TestClient, None, None]:
+    """TestClient with DB session override using the per-test engine."""
+    from app.api.v1.dependencies import get_db_session
+    from app.main import create_app
+
+    app = create_app()
+
+    session_maker = async_sessionmaker(engine, expire_on_commit=False)
+    app.state.session_maker = session_maker
+
+    async def _override() -> AsyncGenerator[AsyncSession, None]:
+        async with session_maker() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    app.dependency_overrides[get_db_session] = _override
+
+    with TestClient(app) as client:
+        yield client
+
+    app.dependency_overrides.clear()

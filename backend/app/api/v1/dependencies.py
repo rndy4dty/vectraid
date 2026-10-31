@@ -1,23 +1,37 @@
-"""API dependencies - Phase 9b.
+"""API dependencies - Phase 11a-4.
 
-Each create_app() call builds its own CaseStore and EvidenceStore and
-exposes them on app.state. This keeps test runs isolated.
+Each request gets its own AsyncSession and repository instances.
+Sessions are committed on success, rolled back on exception.
 """
 from __future__ import annotations
 
-from fastapi import Request
+from collections.abc import AsyncGenerator
 
-from app.modules.investigation.case_store import CaseIDGenerator, CaseStore
-from app.modules.investigation.evidence import EvidenceStore
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
-
-def get_case_store(request: Request) -> CaseStore:
-    return request.app.state.case_store
-
-
-def get_evidence_store(request: Request) -> EvidenceStore:
-    return request.app.state.evidence_store
+from app.repositories.case_repository import CaseRepository
+from app.repositories.evidence_repository import EvidenceRepository
 
 
-def get_case_id_generator(request: Request) -> CaseIDGenerator:
-    return request.app.state.case_id_generator
+async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
+    session_maker = request.app.state.session_maker
+    async with session_maker() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+def get_case_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> CaseRepository:
+    return CaseRepository(session)
+
+
+def get_evidence_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> EvidenceRepository:
+    return EvidenceRepository(session)

@@ -1,14 +1,8 @@
 """Phase 9c - Evidence API endpoints tests (test-first)."""
-from fastapi.testclient import TestClient
-
-from app.main import create_app
 
 
-def _client() -> TestClient:
-    return TestClient(create_app())
 
-
-def _create_case(client: TestClient, case_id: str = "CASE-2026-0001") -> str:
+def _create_case(client, case_id: str = "CASE-2026-0001") -> str:
     """Create a case via API and return its generated id."""
     r = client.post(
         "/api/v1/cases",
@@ -33,8 +27,8 @@ def _evidence_payload(case_id: str, eid: str = "ev-001") -> dict:
 
 
 # ---------- create evidence ----------
-def test_create_evidence():
-    client = _client()
+def test_create_evidence(api_client):
+    client = api_client
     case_id = _create_case(client)
     response = client.post(
         "/api/v1/evidence", json=_evidence_payload(case_id)
@@ -45,8 +39,8 @@ def test_create_evidence():
     assert data["case_id"] == case_id
 
 
-def test_create_evidence_duplicate_returns_409():
-    client = _client()
+def test_create_evidence_duplicate_returns_409(api_client):
+    client = api_client
     case_id = _create_case(client)
     client.post("/api/v1/evidence", json=_evidence_payload(case_id))
     response = client.post(
@@ -55,8 +49,8 @@ def test_create_evidence_duplicate_returns_409():
     assert response.status_code == 409
 
 
-def test_create_evidence_invalid_confidence_returns_422():
-    client = _client()
+def test_create_evidence_invalid_confidence_returns_422(api_client):
+    client = api_client
     case_id = _create_case(client)
     payload = _evidence_payload(case_id)
     payload["confidence"] = 150
@@ -64,8 +58,8 @@ def test_create_evidence_invalid_confidence_returns_422():
     assert response.status_code == 422
 
 
-def test_create_evidence_invalid_type_returns_422():
-    client = _client()
+def test_create_evidence_invalid_type_returns_422(api_client):
+    client = api_client
     case_id = _create_case(client)
     payload = _evidence_payload(case_id)
     payload["evidence_type"] = "invalid_type"
@@ -74,8 +68,8 @@ def test_create_evidence_invalid_type_returns_422():
 
 
 # ---------- get evidence ----------
-def test_get_evidence():
-    client = _client()
+def test_get_evidence(api_client):
+    client = api_client
     case_id = _create_case(client)
     client.post("/api/v1/evidence", json=_evidence_payload(case_id))
     response = client.get("/api/v1/evidence/ev-001")
@@ -83,15 +77,15 @@ def test_get_evidence():
     assert response.json()["evidence_id"] == "ev-001"
 
 
-def test_get_missing_evidence_returns_404():
-    client = _client()
+def test_get_missing_evidence_returns_404(api_client):
+    client = api_client
     response = client.get("/api/v1/evidence/ev-999")
     assert response.status_code == 404
 
 
 # ---------- list evidence by case ----------
-def test_list_evidence_by_case():
-    client = _client()
+def test_list_evidence_by_case(api_client):
+    client = api_client
     case_id = _create_case(client)
     client.post("/api/v1/evidence", json=_evidence_payload(case_id, "ev-001"))
     client.post("/api/v1/evidence", json=_evidence_payload(case_id, "ev-002"))
@@ -102,8 +96,8 @@ def test_list_evidence_by_case():
 
 
 # ---------- link evidence to case ----------
-def test_link_evidence_to_case():
-    client = _client()
+def test_link_evidence_to_case(api_client):
+    client = api_client
     case_id = _create_case(client)
     client.post("/api/v1/evidence", json=_evidence_payload(case_id))
     response = client.post(
@@ -114,8 +108,8 @@ def test_link_evidence_to_case():
     assert "ev-001" in response.json()["evidence_ids"]
 
 
-def test_link_missing_evidence_returns_404():
-    client = _client()
+def test_link_missing_evidence_returns_404(api_client):
+    client = api_client
     case_id = _create_case(client)
     response = client.post(
         f"/api/v1/cases/{case_id}/evidence",
@@ -124,8 +118,8 @@ def test_link_missing_evidence_returns_404():
     assert response.status_code == 404
 
 
-def test_link_missing_case_returns_404():
-    client = _client()
+def test_link_missing_case_returns_404(api_client):
+    client = api_client
     response = client.post(
         "/api/v1/cases/CASE-2099-9999/evidence",
         json={"evidence_id": "ev-001", "by": "a@x.com"},
@@ -134,8 +128,8 @@ def test_link_missing_case_returns_404():
 
 
 # ---------- unlink ----------
-def test_unlink_evidence_from_case():
-    client = _client()
+def test_unlink_evidence_from_case(api_client):
+    client = api_client
     case_id = _create_case(client)
     client.post("/api/v1/evidence", json=_evidence_payload(case_id))
     client.post(
@@ -149,8 +143,8 @@ def test_unlink_evidence_from_case():
     assert "ev-001" not in response.json()["evidence_ids"]
 
 
-def test_unlink_missing_is_noop():
-    client = _client()
+def test_unlink_missing_is_noop(api_client):
+    client = api_client
     case_id = _create_case(client)
     response = client.delete(
         f"/api/v1/cases/{case_id}/evidence/ev-999?by=a@x.com"

@@ -1,7 +1,6 @@
-"""Graph endpoints - Phase 10f.
+"""Graph endpoints - Phase 11a-4.
 
-Builds a graph from evidence in the store and exposes pivot queries.
-Uses the in-memory graph from Phase 6.
+Builds a graph from evidence in the database and exposes pivot queries.
 """
 from __future__ import annotations
 
@@ -9,14 +8,14 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.api.v1.dependencies import get_evidence_store
-from app.modules.investigation.evidence import EvidenceStore
+from app.api.v1.dependencies import get_evidence_repository
 from app.modules.threatgraph.graph import EdgeType, InMemoryGraph, NodeType
 from app.modules.threatgraph.types import (
     make_edge,
     make_evidence_node,
     make_ioc_node,
 )
+from app.repositories.evidence_repository import EvidenceRepository
 
 router = APIRouter(prefix="/graph", tags=["graph"])
 
@@ -47,10 +46,10 @@ def _infer_ioc_type(value: str) -> str:
     return "unknown"
 
 
-def _build_graph_from_store(store: EvidenceStore) -> InMemoryGraph:
-    """Rebuild the in-memory graph from the current evidence store."""
+def _build_graph_from_evidence(evidence_list) -> InMemoryGraph:
+    """Build an in-memory graph from a list of Evidence domain objects."""
     g = InMemoryGraph()
-    for ev in store.list_all():
+    for ev in evidence_list:
         ev_node = make_evidence_node(
             evidence_id=ev.evidence_id,
             module=ev.source_module,
@@ -60,22 +59,22 @@ def _build_graph_from_store(store: EvidenceStore) -> InMemoryGraph:
         g.add_node(ev_node)
 
         prov = ev.provenance or {}
-
-        # Collect (value, type) pairs. Prefer explicit ioc_type; fall back
-        # to format inference.
         candidates: list[tuple[str, str]] = []
 
         single = prov.get("ioc_value")
         if isinstance(single, str) and single:
             explicit = prov.get("ioc_type")
-            t = explicit if isinstance(explicit, str) and explicit else _infer_ioc_type(single)
+            t = (
+                explicit
+                if isinstance(explicit, str) and explicit
+                else _infer_ioc_type(single)
+            )
             candidates.append((single, t))
 
         multi = prov.get("ioc_list")
         if isinstance(multi, list):
             for item in multi:
                 if isinstance(item, str) and item:
-                    # Infer type; ioc_list has no per-item type info.
                     candidates.append((item, _infer_ioc_type(item)))
 
         seen_ids: set[str] = set()
@@ -129,12 +128,13 @@ def _serialize_subgraph(nodes, edges):
 
 
 @router.get("/pivot/{ioc_id}")
-def pivot_graph(
+async def pivot_graph(
     ioc_id: str,
     max_depth: int = Query(default=2, ge=1, le=5),
-    store: EvidenceStore = Depends(get_evidence_store),
+    repo: EvidenceRepository = Depends(get_evidence_repository),
 ):
-    g = _build_graph_from_store(store)
+    evidence_list = await repo.list_all()
+    g = _build_graph_from_evidence(evidence_list)
     if g.get_node(ioc_id) is None:
         raise HTTPException(status_code=404, detail="ioc not found in graph")
     nodes, edges = g.subgraph(ioc_id, max_depth=max_depth)
@@ -142,10 +142,11 @@ def pivot_graph(
 
 
 @router.get("/overview")
-def graph_overview(
-    store: EvidenceStore = Depends(get_evidence_store),
+async def graph_overview(
+    repo: EvidenceRepository = Depends(get_evidence_repository),
 ):
-    g = _build_graph_from_store(store)
+    evidence_list = await repo.list_all()
+    g = _build_graph_from_evidence(evidence_list)
     ioc_count = 0
     evidence_count = 0
     for node in g.all_nodes():

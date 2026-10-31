@@ -1,30 +1,24 @@
-"""Evidence endpoints - Phase 9c.
-
-Add, get, and list evidence. Linking/unlinking evidence to cases is in
-cases.py (POST /cases/{id}/evidence) since it modifies the case.
-"""
+"""Evidence endpoints - Phase 11a-4."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.api.v1.dependencies import get_evidence_store
+from app.api.v1.dependencies import get_evidence_repository
 from app.modules.investigation.evidence import (
     Evidence,
-    EvidenceStore,
     EvidenceType,
 )
-from app.schemas.evidence import (
-    EvidenceCreateRequest,
-    EvidenceResponse,
-)
+from app.repositories.base import RepositoryError
+from app.repositories.evidence_repository import EvidenceRepository
+from app.schemas.evidence import EvidenceCreateRequest, EvidenceResponse
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
 
 
 @router.post("", status_code=201, response_model=EvidenceResponse)
-def create_evidence(
+async def create_evidence(
     payload: EvidenceCreateRequest,
-    store: EvidenceStore = Depends(get_evidence_store),
+    repo: EvidenceRepository = Depends(get_evidence_repository),
 ) -> Evidence:
     try:
         evidence = Evidence(
@@ -42,28 +36,28 @@ def create_evidence(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
-        store.add(evidence)
-    except ValueError as exc:
+        await repo.add(evidence)
+    except RepositoryError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return evidence
 
 
 @router.get("/{evidence_id}", response_model=EvidenceResponse)
-def get_evidence(
+async def get_evidence(
     evidence_id: str,
-    store: EvidenceStore = Depends(get_evidence_store),
+    repo: EvidenceRepository = Depends(get_evidence_repository),
 ) -> Evidence:
-    evidence = store.get(evidence_id)
+    evidence = await repo.get(evidence_id)
     if evidence is None:
         raise HTTPException(status_code=404, detail="evidence not found")
     return evidence
 
 
 @router.get("", response_model=list[EvidenceResponse])
-def list_evidence(
+async def list_evidence(
     case_id: str | None = Query(default=None),
-    store: EvidenceStore = Depends(get_evidence_store),
+    repo: EvidenceRepository = Depends(get_evidence_repository),
 ) -> list[Evidence]:
     if case_id is not None:
-        return store.list_by_case(case_id)
-    return store.list_all()
+        return await repo.list_by_case(case_id)
+    return await repo.list_all()
