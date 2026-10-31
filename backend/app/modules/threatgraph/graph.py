@@ -123,6 +123,17 @@ class InMemoryGraph(BaseGraph):
     def get_node(self, node_id: str) -> GraphNode | None:
         return self._nodes.get(node_id)
 
+    def all_nodes(self) -> list[GraphNode]:
+        """Return all nodes in the graph (insertion order)."""
+        return list(self._nodes.values())
+
+    def all_edges(self) -> list[GraphEdge]:
+        """Return all edges in the graph."""
+        result: list[GraphEdge] = []
+        for edges in self._adj.values():
+            result.extend(edges)
+        return result
+
     def node_count(self) -> int:
         return len(self._nodes)
 
