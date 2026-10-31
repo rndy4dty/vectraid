@@ -34,6 +34,7 @@ datasets/malware/*
 !backend/tests/fixtures/malware/sample.png
 !backend/tests/fixtures/malware/sample.exe
 !backend/tests/fixtures/malware/text.txt
+!backend/tests/fixtures/malware/sample_pe_minimal.exe
 # Ignore everything else in the malware fixture dir (defensive)
 backend/tests/fixtures/malware/*
 !backend/tests/fixtures/malware/.gitkeep
