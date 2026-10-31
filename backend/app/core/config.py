@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     storage_backend: str = "local"
     storage_local_path: str = "./data/storage"
 
+    # API authentication. Empty string = auth disabled (dev mode).
+    vectraid_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

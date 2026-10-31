@@ -2,14 +2,17 @@
 
 Exposes a create_app() factory so tests can build isolated instances.
 Each app gets its own CaseStore / EvidenceStore / CaseIDGenerator.
+API key auth is applied to the /api/v1 router; /health and /openapi.json
+remain unauthenticated.
 """
 from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app.api.v1.router import router as v1_router
+from app.core.auth import require_api_key
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.modules.investigation.case_store import CaseIDGenerator, CaseStore
@@ -30,6 +33,7 @@ def create_app() -> FastAPI:
     )
 
     # Per-app state
+    app.state.settings = settings
     app.state.case_store = CaseStore()
     app.state.evidence_store = EvidenceStore()
     app.state.case_id_generator = CaseIDGenerator(
@@ -44,7 +48,11 @@ def create_app() -> FastAPI:
             "version": settings.app_version,
         }
 
-    app.include_router(v1_router, prefix=settings.api_v1_prefix)
+    app.include_router(
+        v1_router,
+        prefix=settings.api_v1_prefix,
+        dependencies=[Depends(require_api_key)],
+    )
 
     return app
 
