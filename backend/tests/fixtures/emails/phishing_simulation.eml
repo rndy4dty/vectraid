@@ -1,0 +1,49 @@
+Return-Path: <bounce@compromised-relay.test>
+Received: from mail.spoofed-sender.test (mail.spoofed-sender.test [203.0.113.99])
+        by mx.example.com with ESMTP id abc123
+        for <victim@example.com>; Sat, 1 Nov 2026 09:00:00 +0000
+Received-SPF: fail (domain of spoofed-sender.test does not designate 203.0.113.99 as permitted sender)
+Authentication-Results: mx.example.com;
+        spf=fail smtp.mailfrom=spoofed-sender.test;
+        dkim=fail header.d=spoofed-sender.test;
+        dmarc=fail header.from=spoofed-sender.test
+From: "IT Support" <notification@spoofed-sender.test>
+Reply-To: <attacker@evil-collector.test>
+To: victim@example.com
+Subject: Urgent: Verify your account immediately
+Date: Sat, 1 Nov 2026 09:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY123"
+
+--BOUNDARY123
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Dear user,
+
+We detected unusual activity on your account.
+Please verify immediately at hxxps://account-update[.]spoofed-sender[.]test/login?next=/dashboard
+
+Failure to verify within 24 hours will result in account suspension.
+
+IT Support Team
+--BOUNDARY123
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+<html><body>
+<p>Dear user,</p>
+<p>We detected unusual activity on your account.</p>
+<p><a href="hxxps://account-update[.]spoofed-sender[.]test/login">Verify now</a></p>
+<p>Failure to verify will result in account suspension.</p>
+</body></html>
+--BOUNDARY123
+Content-Type: application/zip; name="verify_account.zip"
+Content-Disposition: attachment; filename="verify_account.zip"
+Content-Transfer-Encoding: base64
+
+UEsDBAoAAAAAAAAAIQAAAAAAAAAAAAAAAAAHAAAAdmVyaWZ5LwBQSwECPwAKAAAAAAAAACEA
+AAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAABQAAAAAAAAAdmVyaWZ5L1BLAQIUAAoAAAAAAAAA
+IQAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAALAAAAAAAAAB2ZXJpZnkvUEsFBgAAAAABAAEA
+NQAAACsAAAAAAA==
+--BOUNDARY123--

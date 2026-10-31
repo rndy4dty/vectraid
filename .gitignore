@@ -23,8 +23,13 @@ Thumbs.db
 !.env.example
 *.pem
 *.key
-backend/tests/fixtures/emails/*.eml
+
+# Malware samples — never commit real malware
 backend/tests/fixtures/malware/*
 !backend/tests/fixtures/malware/.gitkeep
 datasets/malware/*
 !datasets/malware/.gitkeep
+
+# Real phishing .eml — but allow test fixtures
+*.eml
+!backend/tests/fixtures/emails/*.eml
