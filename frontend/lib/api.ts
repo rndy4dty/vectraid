@@ -68,6 +68,47 @@ export interface EvidenceResponse {
   provenance: Record<string, unknown>;
 }
 
+export interface EnrichmentEntry {
+  provider: string;
+  classification: string;
+  confidence: number;
+  error: string | null;
+}
+
+export interface AnalyzeResult {
+  indicator: string;
+  ioc_type: string;
+  enrichment: EnrichmentEntry[];
+}
+
+export interface GraphNode {
+  id: string;
+  type: string;
+  label: string;
+  properties: Record<string, unknown>;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  type: string;
+  module: string;
+  confidence: number;
+  timestamp: string;
+}
+
+export interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface GraphOverview {
+  node_count: number;
+  edge_count: number;
+  ioc_count: number;
+  evidence_count: number;
+}
+
 export interface HealthResponse {
   status: string;
   app: string;
@@ -182,8 +223,16 @@ export const api = {
   getReport: (case_id: string) =>
     request<unknown>(`/api/v1/cases/${case_id}/report`),
 
+  graphOverview: () =>
+    request<GraphOverview>("/api/v1/graph/overview"),
+
+  pivotGraph: (ioc_id: string, max_depth: number = 2) =>
+    request<GraphData>(
+      `/api/v1/graph/pivot/${encodeURIComponent(ioc_id)}?max_depth=${max_depth}`,
+    ),
+
   analyzeIOC: (indicator: string, ioc_type: string) =>
-    request<unknown>("/api/v1/analyze/ioc", {
+    request<AnalyzeResult>("/api/v1/analyze/ioc", {
       method: "POST",
       body: JSON.stringify({ indicator, ioc_type }),
     }),
