@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from app.api.v1.dependencies import (
     get_case_id_generator,
     get_case_store,
+    get_evidence_store,
 )
 from app.modules.investigation.case import (
     Case,
@@ -24,7 +25,12 @@ from app.modules.investigation.case_decisions import (
     DecisionOutcome,
     add_decision,
 )
+from app.modules.investigation.case_evidence import (
+    link_evidence,
+    unlink_evidence,
+)
 from app.modules.investigation.case_store import CaseIDGenerator, CaseStore
+from app.modules.investigation.evidence import EvidenceStore
 from app.schemas.case import (
     CaseAssignRequest,
     CaseCreateRequest,
@@ -33,6 +39,7 @@ from app.schemas.case import (
     CaseResponse,
     CaseTransitionRequest,
 )
+from app.schemas.evidence import LinkEvidenceRequest
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -160,6 +167,40 @@ def add_decision_endpoint(
             by=payload.by,
             evidence_reference=payload.evidence_reference,
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    store.update(updated)
+    return updated
+
+# ---------- evidence linking ----------
+@router.post("/{case_id}/evidence", response_model=CaseResponse)
+def link_evidence_endpoint(
+    case_id: str,
+    payload: LinkEvidenceRequest,
+    store: CaseStore = Depends(get_case_store),
+    evidence_store: EvidenceStore = Depends(get_evidence_store),
+) -> Case:
+    case = _require_case(store, case_id)
+    try:
+        updated = link_evidence(
+            case, payload.evidence_id, by=payload.by, store=evidence_store
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    store.update(updated)
+    return updated
+
+
+@router.delete("/{case_id}/evidence/{evidence_id}", response_model=CaseResponse)
+def unlink_evidence_endpoint(
+    case_id: str,
+    evidence_id: str,
+    by: str = Query(..., min_length=1, max_length=200),
+    store: CaseStore = Depends(get_case_store),
+) -> Case:
+    case = _require_case(store, case_id)
+    try:
+        updated = unlink_evidence(case, evidence_id, by=by)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     store.update(updated)
