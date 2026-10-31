@@ -33,9 +33,14 @@ def test_database_url() -> str:
     return os.environ.get("TEST_DATABASE_URL", DEFAULT_TEST_URL)
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture
 async def engine(test_database_url: str) -> AsyncEngine:
-    """Session-scoped async engine. Creates + drops all tables once."""
+    """Function-scoped async engine. Creates + drops all tables per test.
+
+    Function scope avoids ScopeMismatch with function-scoped db_session
+    under pytest-asyncio 0.24+ (session-scoped async fixtures cannot be
+    accessed from function-scoped tests).
+    """
     eng = create_async_engine(test_database_url, echo=False)
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -48,20 +53,8 @@ async def engine(test_database_url: str) -> AsyncEngine:
 
 @pytest_asyncio.fixture
 async def db_session(engine: AsyncEngine) -> AsyncSession:
-    """Per-test session with transaction rolled back afterwards.
-
-    Each test gets a clean slate. We truncate all tables after the test
-    to keep tests isolated.
-    """
+    """Per-test session. Tables are recreated per test by `engine`."""
     session_maker = async_sessionmaker(engine, expire_on_commit=False)
     async with session_maker() as session:
         yield session
         await session.rollback()
-
-    # Truncate all tables for next test (FK-aware order)
-    async with engine.begin() as conn:
-        from sqlalchemy import text
-        await conn.execute(text(
-            "TRUNCATE case_evidence_links, case_decisions, case_notes, "
-            "case_events, evidence, cases RESTART IDENTITY CASCADE"
-        ))
