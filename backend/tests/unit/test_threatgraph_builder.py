@@ -253,9 +253,8 @@ def test_same_ioc_across_modules_shares_node():
     ip = g.get_node("ioc:ipv4:203.0.113.10")
     assert ip is not None
     # It should now have incoming edges from both evidence nodes
-    incoming_srcs = {
-        e.src_id for e in g._rev.get("ioc:ipv4:203.0.113.10", [])
-    }
+    incoming = g.get_incoming_edges("ioc:ipv4:203.0.113.10")
+    incoming_srcs = {e.src_id for e in incoming}
     assert "evidence:phishtrace:phish-002" in incoming_srcs
     assert "evidence:huntscope:hunt-001" in incoming_srcs
 
