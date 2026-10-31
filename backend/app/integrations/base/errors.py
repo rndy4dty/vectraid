@@ -14,11 +14,8 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from typing import TypeVar
 
 import httpx
-
-T = TypeVar("T")
 
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 
@@ -58,7 +55,7 @@ def _is_retryable(exc: BaseException) -> bool:
     return False
 
 
-async def retry_async(
+async def retry_async[T](
     fn: Callable[[], Awaitable[T]],
     *,
     max_attempts: int = 3,
