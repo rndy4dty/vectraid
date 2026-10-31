@@ -10,8 +10,10 @@ import base64
 import tempfile
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, HTTPException
 
+from app.core.config import get_settings
 from app.engine.enrichment.orchestrator import enrich
 from app.integrations.abuseipdb.adapter import AbuseIPDBAdapter
 from app.integrations.otx.adapter import OTXAdapter
@@ -52,16 +54,24 @@ router = APIRouter(prefix="/analyze", tags=["analysis"])
 async def analyze_ioc(payload: AnalyzeIOCRequest) -> AnalyzeIOCResponse:
     # In Phase 9, adapters are created without API keys; enrichment returns
     # unknown for each provider. Phase 11 injects real keys.
-    adapters = [
-        VirusTotalAdapter(api_key=""),
-        AbuseIPDBAdapter(api_key=""),
-        OTXAdapter(api_key=""),
-    ]
-    results = await enrich(
-        indicator=payload.indicator,
-        ioc_type=payload.ioc_type,
-        adapters=adapters,
-    )
+    settings = get_settings()
+    async with httpx.AsyncClient(
+        timeout=settings.ti_request_timeout,
+    ) as client:
+        adapters = [
+            VirusTotalAdapter(
+                api_key=settings.virustotal_api_key, client=client
+            ),
+            AbuseIPDBAdapter(
+                api_key=settings.abuseipdb_api_key, client=client
+            ),
+            OTXAdapter(api_key=settings.otx_api_key, client=client),
+        ]
+        results = await enrich(
+            indicator=payload.indicator,
+            ioc_type=payload.ioc_type,
+            adapters=adapters,
+        )
     enrichment = [
         EnrichmentInResponse(
             provider=r.provider,
