@@ -36,9 +36,8 @@ def _client_no_auth() -> TestClient:
 
 
 # ---------- no key configured: auth disabled ----------
-def test_no_api_key_configured_allows_access():
-    client = _client_no_auth()
-    response = client.get("/api/v1/cases")
+def test_no_api_key_configured_allows_access(api_client):
+    response = api_client.get("/api/v1/cases")
     assert response.status_code == 200
 
 
@@ -78,22 +77,19 @@ def test_wrong_key_returns_401():
     assert response.status_code == 401
 
 
-def test_correct_key_returns_200():
-    import app.main as main_module
-    original = main_module.settings
-    main_module.settings = original.model_copy(
+def test_correct_key_returns_200(api_client):
+    app = api_client.app
+    original = app.state.settings
+    app.state.settings = original.model_copy(
         update={"vectraid_api_key": "secret123"}
     )
     try:
-        app = create_app()
+        response = api_client.get(
+            "/api/v1/cases", headers={"X-API-Key": "secret123"}
+        )
+        assert response.status_code == 200
     finally:
-        main_module.settings = original
-
-    client = TestClient(app)
-    response = client.get(
-        "/api/v1/cases", headers={"X-API-Key": "secret123"}
-    )
-    assert response.status_code == 200
+        app.state.settings = original
 
 
 # ---------- health always open ----------
