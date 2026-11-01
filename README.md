@@ -14,6 +14,14 @@ Unified Threat Intelligence & Investigation Platform.
 6. make test
 7. make backend-dev
 
+## Database
+
+VECTRAID uses PostgreSQL for persistence (Phase 11a+).
+
+    docker compose up -d postgres
+    cd backend && source .venv/bin/activate && alembic upgrade head
+    docker exec -it vectraid-postgres psql -U vectraid -d vectraid -c "CREATE DATABASE vectraid_test;"
+
 ## Structure
 
 - backend/  : Python Core Engine, modules, API
@@ -25,16 +33,18 @@ Unified Threat Intelligence & Investigation Platform.
 
 ## Phase Progress
 
-- [x] Phase 0 — Repository scaffold
-- [ ] Phase 1 — Core Engine
-- [ ] Phase 2 — IntelFusion
-- [ ] Phase 3 — PhishTrace
-- [ ] Phase 4 — MalTrace
-- [ ] Phase 5 — HuntScope
-- [ ] Phase 6 — ThreatGraph
-- [ ] Phase 7 — Central Investigation Engine
-- [ ] Phase 8 — Case Management
-- [ ] Phase 9 — Backend API
-- [ ] Phase 10 — Frontend Dashboard
-- [ ] Phase 11 — Reporting & Integration
-- [ ] Phase 12 — Testing & Release
+- [x] Phase 0 - Repository scaffold
+- [x] Phase 1 - Core Engine
+- [x] Phase 2 - IntelFusion
+- [x] Phase 3 - PhishTrace
+- [x] Phase 4 - MalTrace
+- [x] Phase 5 - HuntScope
+- [x] Phase 6 - ThreatGraph
+- [x] Phase 7 - Central Investigation Engine
+- [x] Phase 8 - Case Management
+- [x] Phase 9 - Backend API
+- [x] Phase 10 - Frontend Dashboard
+- [x] Phase 11a - PostgreSQL persistence
+- [ ] Phase 11b - PDF Report
+- [ ] Phase 11c - Docker Compose full stack
+- [ ] Phase 12 - Testing & Release
