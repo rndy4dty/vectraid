@@ -5,7 +5,7 @@ Business logic remains in app.modules.investigation.case*.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.api.v1.dependencies import (
     get_case_repository,
@@ -28,6 +28,7 @@ from app.modules.investigation.case_evidence import (
     link_evidence,
     unlink_evidence,
 )
+from app.reports.generator import generate_case_pdf
 from app.modules.investigation.case_investigation import (
     open_case_investigation,
 )
@@ -235,3 +236,35 @@ async def case_report(
     report = open_case_investigation(case, store, by="api")
     await repo.update(report.case)
     return report
+
+# ---------- PDF report ----------
+@router.get("/{case_id}/report.pdf")
+async def case_report_pdf(
+    case_id: str,
+    repo: CaseRepository = Depends(get_case_repository),
+    evidence_repo: EvidenceRepository = Depends(get_evidence_repository),
+) -> Response:
+    """Generate a PDF report for the given case."""
+    case = await _require_case(repo, case_id)
+
+    # Load evidence into a store adapter (Phase 7 engine expects a store-like).
+    from app.modules.investigation.case_investigation import open_case_investigation
+    from app.modules.investigation.evidence import EvidenceStore
+
+    store = EvidenceStore()
+    for ev in await evidence_repo.list_by_case(case_id):
+        store.add(ev)
+
+    report = open_case_investigation(case, store, by="api")
+    await repo.update(report.case)
+
+    pdf_bytes = generate_case_pdf(report.case, report.investigation)
+
+    filename = f"VECTRAID-{report.case.case_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
