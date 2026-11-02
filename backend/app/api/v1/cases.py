@@ -28,10 +28,10 @@ from app.modules.investigation.case_evidence import (
     link_evidence,
     unlink_evidence,
 )
-from app.reports.generator import generate_case_pdf
 from app.modules.investigation.case_investigation import (
     open_case_investigation,
 )
+from app.reports.generator import generate_case_pdf
 from app.repositories.case_repository import CaseRepository
 from app.repositories.evidence_repository import EvidenceRepository
 from app.schemas.case import (
